@@ -9,7 +9,7 @@
     "url": "https://github.com/abagames/crisp-game-lib.git"
   },
   "homepage": "https://github.com/abagames/crisp-game-lib",
-  "main": "docs/bundle.js",
+  "main": "bundle.js",
   "typings": "docs/bundle.d.ts",
   "scripts": {
     "watch_games": "light-server -s docs -w \"docs/**/* # # reload\"",
