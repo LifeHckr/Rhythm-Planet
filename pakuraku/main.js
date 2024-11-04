@@ -1,189 +1,136 @@
-title = "PAKU PAKU";
+title = "METEO PLANET";
 
 description = `
-[Tap] Turn
+[Tap] Move
 `;
 
 characters = [
   `
-  llll
- lll
-lll
-lll
- lll
-  llll
-`,
-  `
-  lll
- lllll
-lll
-lll
- lllll
-  lll
-`,
-  `
-  ll
- llll
 llllll
+ll l l
+ll l l
 llllll
- llll
-  ll
-`,
+ l  l
+ l  l
+  `,
   `
-  lll
- l l l
- llll
- llll
-llll
+llllll
+ll l l
+ll l l
+llllll
+ll  ll
+  `,
+  `
+ lll
 l l l
-`,
-  `
-  lll
- l l l
- llll
- llll
- llll
- l l
-`,
-  `
-ll
-ll
-`,
-  `
- ll
-llll
-llll
- ll
-`,
-  `
-  l l
-
-
-
+l lll
+ll ll
+ lll
 `,
 ];
 
 options = {
   theme: "dark",
-  viewSize: { x: 100, y: 50 },
   isPlayingBgm: true,
   isReplayEnabled: true,
-  seed: 9,
+  seed: 6,
 };
 
-/** @type {{x: number, vx: number}} */
-let player;
-/** @type {{x: number, eyeVx: number}} */
-let enemy;
-/** @type {{x: number, isPower: boolean}[]} */
-let dots;
-let powerTicks;
+/** @type {{dist: number, angle: number, type: number}[]} */
+let fallings;
+let nextFallingsTicks;
+let nextFallingAngle;
+let angle;
+let targetAngle;
 let animTicks;
-let multiplier;
+/** @type {{dist: number, angle: number}[]} */
+let stars;
+
+const MAX_RADIUS = 6;
+let combo;
+let mistakes;
 
 function update() {
   if (!ticks) {
-    player = { x: 40, vx: 1 };
-    enemy = { x: 100, eyeVx: 0 };
-    multiplier = 0;
-    addDots();
-    powerTicks = animTicks = 0;
+    fallings = [{ dist: 53, angle: (rndi(4) * PI) / 2, type: 0 }]; //always has 1 to start
+    nextFallingsTicks = 0;
+    nextFallingAngle = rndi(1, 4);
+    angle = 0;
+    targetAngle = 0;
+    animTicks = 0;
+    stars = times(24, (_) => ({ dist: rnd(10, 70), angle: rnd(PI * 2) }));
+
+    combo = 0;
+    mistakes = 3;
   }
-  animTicks += difficulty;
-  color("black");
-  text(`x${multiplier}`, 3, 9);
-  if (input.isJustPressed) {
-    player.vx *= -1;
-  }
-  player.x += player.vx * 0.5 * difficulty;
-  if (player.x < -3) {
-    player.x = 103;
-  } else if (player.x > 103) {
-    player.x = -3;
-  }
-  color("blue");
-  rect(0, 23, 100, 1);
-  rect(0, 25, 100, 1);
-  rect(0, 34, 100, 1);
-  rect(0, 36, 100, 1);
-  color("green");
-  const ai = floor(animTicks / 7) % 4;
-  char(addWithCharCode("a", ai === 3 ? 1 : ai), player.x, 30, {
-    // @ts-ignore
-    mirror: { x: player.vx },
+  color("yellow");
+  text(`Cmb ${combo}`, 3, 9); //drawn combo
+
+  const curDifficulty = sqrt(difficulty); //difficulty
+
+  color("light_black"); //background stars
+  const starPos = vec();
+  stars.forEach((star) => {
+    starPos.set(50, 50).addWithAngle(star.angle - angle, star.dist);
+    box(starPos, 1);
   });
-  remove(dots, (d) => {
-    color(
-        d.isPower && floor(animTicks / 7) % 2 === 0 ? "transparent" : "yellow"
-    );
-    const c = char(d.isPower ? "g" : "f", d.x, 30).isColliding.char;
-    if (c.a || c.b || c.c) {
-      if (d.isPower) {
-        play("jump");
-        if (enemy.eyeVx === 0) {
-          powerTicks = 120;
-        }
-      } else {
-        play("hit");
+
+  color("black"); //Player and input handling
+  if (input.isJustPressed) {
+    play("select");
+    //play("laser");
+    targetAngle += PI / 2;
+  }
+  char(addWithCharCode(targetAngle !== angle ? "b" : "a", floor(animTicks / 3) % 2), 50, 42);
+  angle = targetAngle;
+  arc(50, 50, 3, 2, -angle + PI * 0.2, -angle + PI * 2.2);
+
+  nextFallingsTicks--;
+  if (nextFallingsTicks < 0) {
+    const fallingsRadius = rndi(MAX_RADIUS); //0 = just meteor, every additional increases the num on each side
+    let dist = 70; //just offscreen?
+    let angle = nextFallingAngle * (PI / 2);
+    times(MAX_RADIUS, (i) => { //at most there should be
+      let type = abs(i + 1 - MAX_RADIUS);
+      if (type <= fallingsRadius) {
+        fallings.push({
+          dist,
+          angle,
+          type: type === 0 ? 0 : fallingsRadius - type + 1,
+        });
       }
-      addScore(multiplier);
+      dist += MAX_RADIUS;
+    });
+    nextFallingsTicks = rnd(50, 80) / sqrt(curDifficulty);
+    nextFallingAngle += rndi(1, 4);
+  }
+
+  const fp = vec();
+  remove(fallings, (f) => {
+    f.dist -= 0.5 * curDifficulty;
+    fp.set(50, 50).addWithAngle(f.angle - angle, f.dist);
+    if (f.type === 0) {
+      color("black");
+      const c = char("c", fp).isColliding.char;
+      if (c.a || c.b) {
+        play("explosion");
+        //end();
+      }
+    } else {
+      color("yellow");
+      const c = box(fp, f.type).isColliding.char;
+      if (c.a || c.b) {
+        play("powerUp");
+        addScore(f.type);
+        return true;
+      }
+    }
+    if (f.dist < 5) {
+      if (f.type === 0) {
+        play("hit");
+        particle(fp);
+      }
       return true;
     }
   });
-  const evx =
-      enemy.eyeVx !== 0
-          ? enemy.eyeVx
-          : (player.x > enemy.x ? 1 : -1) * (powerTicks > 0 ? -1 : 1);
-  enemy.x = clamp(
-      enemy.x +
-      evx *
-      (powerTicks > 0 ? 0.25 : enemy.eyeVx !== 0 ? 0.75 : 0.55) *
-      difficulty,
-      0,
-      100
-  );
-  if ((enemy.eyeVx < 0 && enemy.x < 1) || (enemy.eyeVx > 0 && enemy.x > 99)) {
-    enemy.eyeVx = 0;
-  }
-  color(
-      powerTicks > 0
-          ? powerTicks < 30 && powerTicks % 10 < 5
-              ? "black"
-              : "blue"
-          : enemy.eyeVx !== 0
-              ? "black"
-              : "red"
-  );
-  const c = char(
-      enemy.eyeVx !== 0 ? "h" : addWithCharCode("d", floor(animTicks / 7) % 2),
-      enemy.x,
-      30,
-      {
-        // @ts-ignore
-        mirror: { x: evx },
-      }
-  ).isColliding.char;
-  if (enemy.eyeVx === 0 && (c.a || c.b || c.c)) {
-    if (powerTicks > 0) {
-      play("powerUp");
-      addScore(10 * multiplier, enemy.x, 30);
-      enemy.eyeVx = player.x > 50 ? -1 : 1;
-      powerTicks = 0;
-      multiplier++;
-    } else {
-      play("explosion");
-      end();
-    }
-  }
-  powerTicks -= difficulty;
-  if (dots.length === 0) {
-    play("coin");
-    addDots();
-  }
-}
-
-function addDots() {
-  let pi = player.x > 50 ? rndi(1, 6) : rndi(10, 15);
-  dots = times(16, (i) => ({ x: i * 6 + 5, isPower: i === pi }));
-  multiplier++;
 }
