@@ -159,10 +159,11 @@ function update() {
         }
         if (successCombo) {
           play("powerUp");
-          addScore(combo * f.type);
+          addScore(combo * f.type, vec(50, 42));
         } else {
           play("powerUp", {volume: 1, note: "C5"});
-          addScore(1);
+          addScore(1, vec(50, 42));
+
         }
 
         return true;
