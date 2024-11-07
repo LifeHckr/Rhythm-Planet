@@ -150,6 +150,12 @@ function update() {
         if (f.type === 1 && abs(beat) < TIMING / f.speed) {
           successCombo = true;
           combo++;
+          floaters.push({
+            str: "hit",
+            pos: vec(50, 42),
+            vy: 2,
+            ticks: 30,
+          });
         }
         if (successCombo) {
           play("powerUp");
@@ -170,6 +176,12 @@ function update() {
           play("hit");
           combo++;
           addScore(combo);
+          floaters.push({
+            str: "hit",
+            pos: vec(50, 42),
+            vy: 2,
+            ticks: 30,
+          });
         } else if (abs(beat) > TIMING) {
           play("explosion");
           combo = 0;
