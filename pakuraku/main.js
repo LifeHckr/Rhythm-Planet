@@ -75,10 +75,11 @@ function update() {
     mistakes = 3;
     beat = 0;
   }
+  difficulty = (score / 100) + 1;
   beat--;
 
   const curDifficulty = sqrt(difficulty); //difficulty
-
+  
   color("light_black"); //background stars
   const starPos = vec();
   stars.forEach((star) => {
