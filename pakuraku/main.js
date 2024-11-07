@@ -50,6 +50,9 @@ let animTicks;
 /** @type {{dist: number, angle: number}[]} */
 let stars;
 
+/** @type {{ str: string; pos: Vector; vy: number; ticks: number }[]} */
+let floaters;
+
 const MAX_RADIUS = 6;
 const BEAT_BUFFER = 5;
 const TIMING = 8;
@@ -67,6 +70,7 @@ function update() {
     animTicks = 0;
     stars = times(24, (_) => ({ dist: rnd(10, 70), angle: rnd(PI * 2) }));
 
+    floaters = [];
     combo = 0;
     mistakes = 3;
     beat = 0;
@@ -98,9 +102,7 @@ function update() {
   angle = targetAngle;
   arc(50, 50, 3, 2, -angle + PI * 0.2, -angle + PI * 2.2);
 
-  nextFallingsTicks--;
   if (nextFallingsTicks <= 0) { //will change
-    console.log(ticks + "create");
     let fallingAngle = (targetAngle / (PI / 2)) % 4;
     const fallingsRadius = rndi(1, MAX_RADIUS); //0 = just meteor, every additional increases the num on each side
     let dist = 70; //just offscreen?
@@ -115,11 +117,18 @@ function update() {
           type: type === 0 ? 0 : fallingsRadius - type + 1,
         });
       }
-      dist += MAX_RADIUS + 3;
+      dist += MAX_RADIUS + 2;
     });
-    nextFallingsTicks = rnd(300, 300) / sqrt(curDifficulty);
+    nextFallingsTicks = 200 / sqrt(curDifficulty);
   }
 
+  remove(floaters, (fl) => {
+    text(fl.str, fl.pos);
+    fl.pos.y -= fl.vy;
+    fl.vy *= .9;
+    fl.ticks--;
+    return fl.ticks < 0;
+  });
   const fp = vec();
   remove(fallings, (f) => {
     f.dist -= f.speed; //at distance 70, with -.5 takes ~130ticks to hit, 100 dist : 190ticks
@@ -128,8 +137,10 @@ function update() {
       color("black");
       const c = char("c", fp).isColliding.char;
       if (c.a || c.b) {
+        nextFallingsTicks = -1;
         play("explosion");
         end();
+        return true;
       }
     } else {
       color("yellow");
@@ -153,10 +164,11 @@ function update() {
 
     if (f.dist < 5) {//hitting planet
       if (f.type === 0) {
-        console.log(ticks)
+        nextFallingsTicks = -1;
         if (abs(beat) < TIMING / f.speed) {
           play("hit");
           combo++;
+          addScore(combo);
         } else if (abs(beat) > TIMING) {
           play("explosion");
           combo = 0;
@@ -164,14 +176,16 @@ function update() {
         particle(fp);
         successCombo = false;
       } else {
+        floaters.push({
+          str: "miss",
+          pos: vec(50, 42),
+          vy: 2,
+          ticks: 30,
+        });
         combo = 0;
         play("laser", {volume: 1});
       }
       return true;
     }
   });
-}
-
-function checkRhythm() {
-
 }
