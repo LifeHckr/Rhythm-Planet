@@ -75,7 +75,7 @@ function update() {
     mistakes = 3;
     beat = 0;
   }
-  difficulty = (score / 100) + 1;
+  difficulty = (combo / 20) + 1;
   beat--;
 
   const curDifficulty = sqrt(difficulty); //difficulty
