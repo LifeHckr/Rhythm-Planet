@@ -75,10 +75,9 @@ function update() {
     mistakes = 3;
     beat = 0;
   }
-  difficulty = (combo / 20) + 1;
   beat--;
 
-  const curDifficulty = sqrt(difficulty); //difficulty
+  const curDifficulty = sqrt((combo * 0.0001)) + difficulty; //difficulty
 
   color("light_black"); //background stars
   const starPos = vec();
