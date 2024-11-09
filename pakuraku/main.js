@@ -50,7 +50,7 @@ let animTicks;
 /** @type {{dist: number, angle: number}[]} */
 let stars;
 
-/** @type {{ str: string; pos: Vector; vy: number; ticks: number }[]} */
+/** @type {{ str: string; pos: Vector; vy: number; ticks: number, color: string }[]} */
 let floaters;
 
 const MAX_RADIUS = 6;
@@ -79,7 +79,7 @@ function update() {
   beat--;
 
   const curDifficulty = sqrt(difficulty); //difficulty
-  
+
   color("light_black"); //background stars
   const starPos = vec();
   stars.forEach((star) => {
@@ -97,7 +97,7 @@ function update() {
       play("select");
     }
 
-    targetAngle += PI / 2;
+    targetAngle = angle >= 2*PI ? PI/2 : targetAngle + PI/2;
   }
   char(addWithCharCode(targetAngle !== angle ? "b" : "a", floor(animTicks / 3) % 2), 50, 42);
   angle = targetAngle;
@@ -124,6 +124,7 @@ function update() {
   }
 
   remove(floaters, (fl) => {
+    color(fl.color);
     text(fl.str, fl.pos);
     fl.pos.y -= fl.vy;
     fl.vy *= .9;
@@ -151,13 +152,22 @@ function update() {
           successCombo = true;
           combo++;
           floaters.push({
-            str: "hit",
+            str: "Combo",
             pos: vec(50, 42),
             vy: 2,
             ticks: 30,
+            color: "yellow"
           });
-        }
-        if (successCombo) {
+        } else if (f.type === 1) {
+          addScore(1, vec(50, 42));
+          floaters.push({
+            str: "Early",
+            pos: vec(50, 42),
+            vy: 2,
+            ticks: 30,
+            color: "light_yellow"
+          });
+        }else if (successCombo) {
           play("powerUp");
           addScore(combo * f.type, vec(50, 42));
         } else {
@@ -165,7 +175,6 @@ function update() {
           addScore(1, vec(50, 42));
 
         }
-
         return true;
       }
     }
@@ -178,12 +187,30 @@ function update() {
           combo++;
           addScore(combo);
           floaters.push({
-            str: "hit",
+            str: "combo",
             pos: vec(50, 42),
             vy: 2,
             ticks: 30,
+            color: "yellow"
           });
         } else if (abs(beat) > TIMING) {
+          if (abs(f.angle - angle) === PI) {
+            floaters.push({
+              str: "early",
+              pos: vec(fp.x, fp.y),
+              vy: 2,
+              ticks: 30,
+              color: "light_yellow"
+            });
+          } else {
+            floaters.push({
+              str: "miss",
+              pos: vec(fp.x, fp.y),
+              vy: 2,
+              ticks: 30,
+              color: "red"
+            });
+          }
           play("explosion");
           combo = 0;
         }
@@ -195,6 +222,7 @@ function update() {
           pos: vec(50, 42),
           vy: 2,
           ticks: 30,
+          color: "red"
         });
         combo = 0;
         play("laser", {volume: 1});
