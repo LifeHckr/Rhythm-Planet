@@ -135,7 +135,18 @@ function update() {
     f.dist -= f.speed; //at distance 70, with -.5 takes ~130ticks to hit, 100 dist : 190ticks
     fp.set(50, 50).addWithAngle(f.angle - angle, f.dist);
     if (f.type === 0) {
-      color("black");
+      if(f.dist < 17){
+        color("red");
+      }
+      else if(f.dist < 20){
+        color("yellow");
+      }
+      else if(f.dist < 30){
+        color("light_yellow");
+      }
+      else{
+        color("black");
+      }
       const c = char("c", fp).isColliding.char;
       if (c.a || c.b) {
         nextFallingsTicks = -1;
